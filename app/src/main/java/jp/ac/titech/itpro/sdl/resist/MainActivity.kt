@@ -10,10 +10,16 @@ import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
+import java.util.*
+import kotlin.concurrent.schedule
+import kotlin.concurrent.scheduleAtFixedRate
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var manager: SensorManager
     private lateinit var gyroscope: Sensor
+
+    private val accumulator = AngleAccumulator()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -31,6 +37,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     finish()
                     return
                 }
+
+        val frameRate = 60
+        Timer().scheduleAtFixedRate(delay = 0, period = 1000L/frameRate) {
+            rotation_view.setDirection(accumulator.angle)
+        }
     }
 
     override fun onResume() {
@@ -48,7 +59,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     override fun onSensorChanged(event: SensorEvent) {
         val omegaZ = event.values[2] // z-axis angular velocity (rad/sec)
         // TODO: calculate right direction that cancels the rotation
-        rotation_view.setDirection(omegaZ.toDouble())
+        accumulator.putVelocity(omegaZ.toDouble())
     }
 
     override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
